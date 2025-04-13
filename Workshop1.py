@@ -1,12 +1,12 @@
-
 import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import sqlite3
 from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import StandardScaler
 
-# Indlæser datasættet (justér stien hvis nødvendigt)
+# Indlæser datasættet
 df = pd.read_csv(r"C:\Users\thoma\Desktop\python_work\Mini_projects\AI&DATA Miniprojekt\archive\horse.csv")
 
 # Vis de første 5 rækker
@@ -17,15 +17,10 @@ print(df.head())
 print("\nBeskrivende statistik:")
 print(df.describe())
 
-
-
-
 # Tæl manglende værdier per kolonne
 missing_values = df.isnull().sum()
 print("Manglende værdier per kolonne:")
 print(missing_values)
-
-
 
 # Visualiser manglende data med heatmap
 plt.figure(figsize=(10, 6))
@@ -33,48 +28,43 @@ sns.heatmap(df.isnull(), cbar=False, cmap="viridis")
 plt.title("Heatmap: Manglende værdier i datasættet")
 plt.show()
 
-
-
-# Visualiser korrelation mellem manglende værdier
-plt.figure(figsize=(10, 6))
-sns.heatmap(df.isnull().corr(), annot=True, cmap="coolwarm", linewidths=0.5)
-plt.title("Heatmap: Korrelation mellem manglende værdier")
-plt.show()
-
-
-
-
-# Udvælg kun numeriske kolonner til imputering
+# Udvælg kun numeriske kolonner
 num_cols = df.select_dtypes(include=np.number).columns
 df_num = df[num_cols]
 
-# Visualiser fordelingen før imputering
-plt.figure(figsize=(8, 5))
-sns.histplot(df_num.melt(), x="value", hue="variable", kde=True, bins=30)
-plt.title("Datadistribution før imputering")
-plt.show()
-
-
-
-
-# Mean-imputering: Erstat manglende værdier med gennemsnit
+# Imputering på den originale data
 mean_imputer = SimpleImputer(strategy="mean")
 df_mean_imputed = pd.DataFrame(mean_imputer.fit_transform(df_num), columns=num_cols)
 
-# KNN-imputering: Brug nærmeste naboer til at estimere manglende værdier
 knn_imputer = KNNImputer(n_neighbors=5)
 df_knn_imputed = pd.DataFrame(knn_imputer.fit_transform(df_num), columns=num_cols)
 
-# Visualiser fordeling efter hver imputeringstype
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
-sns.histplot(df_mean_imputed.melt(), x="value", hue="variable", kde=True, bins=30, ax=axes[0])
-axes[0].set_title("Datadistribution efter Mean-imputering")
-sns.histplot(df_knn_imputed.melt(), x="value", hue="variable", kde=True, bins=30, ax=axes[1])
-axes[1].set_title("Datadistribution efter KNN-imputering")
+# Skaler de tre datasæt
+scaler = StandardScaler()
+df_num_scaled = pd.DataFrame(scaler.fit_transform(df_num), columns=df_num.columns)
+df_mean_imputed_scaled = pd.DataFrame(scaler.fit_transform(df_mean_imputed), columns=df_mean_imputed.columns)
+df_knn_imputed_scaled = pd.DataFrame(scaler.fit_transform(df_knn_imputed), columns=df_knn_imputed.columns)
+
+# Visualiser skalerede data før imputering
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df_num_scaled)
+plt.title("Boksplot: Skaleret datadistribution før imputering")
+plt.xticks(rotation=90)
 plt.show()
 
+# Visualiser skalerede data efter Mean-imputering
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df_mean_imputed_scaled)
+plt.title("Boksplot: Skaleret datadistribution efter Mean-imputering")
+plt.xticks(rotation=90)
+plt.show()
 
-
+# Visualiser skalerede data efter KNN-imputering
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=df_knn_imputed_scaled)
+plt.title("Boksplot: Skaleret datadistribution efter KNN-imputering")
+plt.xticks(rotation=90)
+plt.show()
 
 try:
     # Opret forbindelse til SQLite-database
